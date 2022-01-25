@@ -2,3 +2,6 @@
 	path = tskit
 	url = https://github.com/tskit-dev/tskit
 
+[submodule "kastore"]
+	path = kastore
+	url = https://github.com/tskit-dev/kastore
