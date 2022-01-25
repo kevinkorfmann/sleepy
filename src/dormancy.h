@@ -611,7 +611,6 @@ void dormancy(tsk_table_collection_t &tables,
 
     std::map<double, bool> lookup, lookup_selection;
     
-    
     std::map<double, int> fixed_mutations;
     std::map<double, int> prev_generation;
 
@@ -635,8 +634,6 @@ void dormancy(tsk_table_collection_t &tables,
     sleepy_simplify(tables, std::vector<std::pair<tsk_id_t, MutationMetaData>>{}, m);
     
     for(int num_generation=0; num_generation<num_generations;) {
-
-
 
 
         tsk_id_t next_offspring_index = tables.nodes.num_rows;
@@ -744,7 +741,6 @@ void dormancy(tsk_table_collection_t &tables,
                 }
 
 
-
                 if (reached_fixation == 1) {
                     generations_post_fixation++;
                     if (add_mutations_after_fixation) {
@@ -801,7 +797,6 @@ void dormancy(tsk_table_collection_t &tables,
                     parents.emplace_back(parent[0]);
                 }
                     
-                
 
             } else {
                 parents.clear();
