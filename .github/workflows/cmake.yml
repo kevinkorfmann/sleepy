@@ -28,7 +28,9 @@ jobs:
         sudo apt install -y libboost-all-dev
         
     - name: Submodules
-      run: git submodule update --init --recursive
+      run:  |
+        git clone https://github.com/tskit-dev/kastore
+        git submodule update --init --recursive
       
         
     - name: Configure CMake
