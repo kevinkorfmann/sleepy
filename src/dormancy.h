@@ -25,6 +25,26 @@
         exit(EXIT_FAILURE);                                                             \
     }
 
+void sleepy_create_mock_nodes(tsk_node_table_t *self, int length=10) {
+    
+    for (int i=0; i<length; i++) {
+        tsk_node_table_add_row(self, TSK_NODE_IS_SAMPLE, i, TSK_NULL, TSK_NULL, NULL, 0);
+    }
+    
+}
+
+
+void sleepy_init_tables(tsk_table_collection_t *self, int N=3, int m=1, int gen=1) {
+    for (int i=0; i<m; i++) {
+        for (int j=0; j<2*N; j++) {
+            tsk_node_table_add_row(&self->nodes, TSK_NODE_IS_SAMPLE, (double) gen,
+                                   TSK_NULL, TSK_NULL, NULL, 0);
+        }
+        gen++;
+    }
+}
+
+
 struct mutation_info {
     std::vector<int> origin_generation;
     double selection_coefficient;
@@ -90,7 +110,6 @@ std::vector<int> s3_num_roots(tsk_table_collection_t &tables)
     tsk_tree_t tree;
     int ret, iter;
     std::vector<int> num_roots{};
-
 
     ret = tsk_table_collection_build_index(&tables, 0);
     check_tsk_error(ret);
