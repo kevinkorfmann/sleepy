@@ -6,6 +6,7 @@ add_executable(
 )
 target_link_libraries(
   dormancy_test
+  tskit
   gtest_main
 )
 
