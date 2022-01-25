@@ -104,7 +104,7 @@ struct recorder_t {
     }
 };
 
-std::vector<int> s3_num_roots(tsk_table_collection_t &tables)
+std::vector<int> sleepy_num_roots(tsk_table_collection_t &tables)
 {
     tsk_treeseq_t ts;
     tsk_tree_t tree;
@@ -127,9 +127,9 @@ std::vector<int> s3_num_roots(tsk_table_collection_t &tables)
     return num_roots;
 }
 
-bool s3_mrca_found(tsk_table_collection_t &tables)
+bool sleepy_mrca_found(tsk_table_collection_t &tables)
 {
-    std::vector<int> num_roots = s3_num_roots(tables);
+    std::vector<int> num_roots = sleepy_num_roots(tables);
     for (auto num_root : num_roots) {
         if (num_root != 1) { 
             return false; };
@@ -137,7 +137,7 @@ bool s3_mrca_found(tsk_table_collection_t &tables)
     return true;
 }
 
-void s3_reverse_time(tsk_node_table_t &nodes, int begin, int end = 0)
+void sleepy_reverse_time(tsk_node_table_t &nodes, int begin, int end = 0)
 {
     std::vector<double> time_before; 
     time_before.reserve(begin);
@@ -172,7 +172,7 @@ void s3_reverse_time(tsk_node_table_t &nodes, int begin, int end = 0)
     
 }
 
-void s3_add_time(tsk_node_table_t &nodes, int by, int begin, int end = 0)
+void sleepy_add_time(tsk_node_table_t &nodes, int by, int begin, int end = 0)
 {
     std::vector<double> time_before; 
     time_before.reserve(begin);
@@ -231,7 +231,7 @@ void stats_random_real(double &output, int start, int end)
     output = d(generator); 
 }
 
-void s3_dormancy_weights(std::vector<double> &weights, double b, tsk_id_t m)
+void sleepy_dormancy_weights(std::vector<double> &weights, double b, tsk_id_t m)
 {
     for (int i=0; i<m; i++) {
         weights.emplace_back(b * pow((1-b), i-1));
@@ -242,12 +242,12 @@ void s3_dormancy_weights(std::vector<double> &weights, double b, tsk_id_t m)
     }
 }
 
-void s3_dormancy_generation(std::vector<tsk_id_t> &dormancy_generations, std::vector<double> &weights, tsk_id_t N) 
+void sleepy_dormancy_generation(std::vector<tsk_id_t> &dormancy_generations, std::vector<double> &weights, tsk_id_t N) 
 {
     stats_random_discrete(dormancy_generations, weights, N);
 }
 
-void s3_infsites(std::vector<double> &output, double mu, std::map<double, bool> &lookup, int L, int m_i=1)
+void sleepy_infsites(std::vector<double> &output, double mu, std::map<double, bool> &lookup, int L, int m_i=1)
 {
     int nmut = 0;
     int accum_mutations = 0;
@@ -275,7 +275,7 @@ void s3_infsites(std::vector<double> &output, double mu, std::map<double, bool> 
     }
 }
 
-void s3_fsites(std::vector<double> &output, double mu, double position, std::map<double, bool> &lookup)
+void sleepy_fsites(std::vector<double> &output, double mu, double position, std::map<double, bool> &lookup)
 {
     int nmut;
     stats_random_poisson(nmut, mu);
@@ -297,7 +297,7 @@ void s3_fsites(std::vector<double> &output, double mu, double position, std::map
     }
 }
 
-void s3_fsites_determined(std::vector<double> &output, double mu, double position, std::map<double, bool> &lookup)
+void sleepy_fsites_determined(std::vector<double> &output, double mu, double position, std::map<double, bool> &lookup)
 {
     int nmut = 1;
     int i=0;
@@ -343,7 +343,7 @@ struct recombination_event {
     tsk_id_t child;
 };
 
-void s3_recombination_events(std::vector<recombination_event> &recombination_events, double r,
+void sleepy_recombination_events(std::vector<recombination_event> &recombination_events, double r,
                        std::pair<tsk_id_t, tsk_id_t> parent_idxs, tsk_id_t next_offspring_id, double L)
 {
     int nbreaks;
@@ -384,7 +384,7 @@ void s3_recombination_events(std::vector<recombination_event> &recombination_eve
     }
 }
 
-tsk_id_t s3_gamete_position_recombination(double position, std::vector<recombination_event> &recombination_events)
+tsk_id_t sleepy_gamete_position_recombination(double position, std::vector<recombination_event> &recombination_events)
 {
     for (int i=0; i<recombination_events.size(); i++) {
         if (position >= recombination_events[i].left && position <= recombination_events[i].right) {
@@ -399,7 +399,7 @@ struct MutationMetaData {
     double position;
 };
 
-void s3_simplify(tsk_table_collection_t &tables, std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations,
+void sleepy_simplify(tsk_table_collection_t &tables, std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations,
               tsk_id_t sample_generation)
 {
     int ret;
@@ -489,7 +489,7 @@ void print_double_vector_vector(std::vector<std::vector<double>> v) {
     std::cout << std::endl;
 }
 
-void s3_merge_selection_genotypes(std::map<int, genotype_matrix> &selection_genotypes_output,
+void sleepy_merge_selection_genotypes(std::map<int, genotype_matrix> &selection_genotypes_output,
     std::map<double, genotype_matrix> selection_genotypes)
 {
     std::vector<double> keys = get_keys(selection_genotypes);
@@ -524,7 +524,7 @@ void s3_merge_selection_genotypes(std::map<int, genotype_matrix> &selection_geno
     }
 }
 
-void s3_weights(std::vector<double> &weights, std::vector<tsk_id_t> selection_genotype, 
+void sleepy_weights(std::vector<double> &weights, std::vector<tsk_id_t> selection_genotype, 
                 double dominance_coefficient, double selection_coefficient)
 {
     for (int i=0; i<selection_genotype.size(); i+=2) {
@@ -586,9 +586,7 @@ void dormancy(tsk_table_collection_t &tables,
              ) {
     
     
-    int ret;
-    int reached_fixation = 0;
-    int generations_post_fixation = 0;
+    int ret, reached_fixation, generations_post_fixation = 0;
     bool keep_adding_mutation = true;
     
     std::map<double, double> position_coefficient_mapping;
@@ -597,12 +595,7 @@ void dormancy(tsk_table_collection_t &tables,
         position_coefficient_mapping[selection_positions[i]] = selection_coefficients[i];
         position_dominance_mapping[selection_positions[i]] = dominance_coefficients[i];
     }
-    
-    //tsk_node_table_t nodes = tables.nodes;
-    //tsk_edge_table_t edges = tables.edges;
-    //tsk_site_table_t sites = tables.sites;
-    //tsk_mutation_table_t mutations = tables.mutations;
-    
+
     
     //mu = 4 * N * mu * L;
     //r = 4 * N * r * L;
@@ -614,44 +607,34 @@ void dormancy(tsk_table_collection_t &tables,
     }
     
     
-    std::map<double, genotype_matrix> selection_genotypes;
-    std::map<double, genotype_matrix> next_selection_genotypes;
+    std::map<double, genotype_matrix> selection_genotypes, next_selection_genotypes;
 
-    std::map<double, bool> lookup;
-    std::map<double, bool> lookup_selection;
+    std::map<double, bool> lookup, lookup_selection;
     
     
     std::map<double, int> fixed_mutations;
     std::map<double, int> prev_generation;
 
-    
     std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations;
     std::map<double, bool> mutation_adding_generation;
     
-    std::vector<double> mpos_selection;
-    std::vector<double> mpos;
+    std::vector<double> mpos_selection, mpos;
     
     std::vector<tsk_id_t> parents;
     
     int gen = 0;
     int selection_generation = 0;
     
-    for (int i=0; i<m; i++) {
-        for (int j=0; j<2*N; j++) {
-            tsk_node_table_add_row(&tables.nodes, TSK_NODE_IS_SAMPLE, (double) gen, TSK_NULL, TSK_NULL, NULL, 0);
-        }
-        gen++;
-    }
-    
-    s3_reverse_time(tables.nodes, 0);    
-    s3_simplify(tables, std::vector<std::pair<tsk_id_t, MutationMetaData>>{}, m);
+    // adding first 2*N*m nodes to the node table
+    sleepy_init_tables(&tables, N, m, gen);
+
+    // updating generation counter
+    gen = m;
+
+    sleepy_reverse_time(tables.nodes, 0);    
+    sleepy_simplify(tables, std::vector<std::pair<tsk_id_t, MutationMetaData>>{}, m);
     
     for(int num_generation=0; num_generation<num_generations;) {
-
-
-
-
-
 
 
 
@@ -684,19 +667,19 @@ void dormancy(tsk_table_collection_t &tables,
             
             // exit condition upon fixation
             if (reached_fixation == 1 && generations_post_fixation > generations_post_fixation_threshold) {
-                s3_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
-                s3_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
-                s3_simplify(tables,temp_mutations, 1);
+                sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
+                sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
+                sleepy_simplify(tables,temp_mutations, 1);
                 return;
             }
 
 
             
             std::vector<double> dorm_weights;
-            s3_dormancy_weights(dorm_weights, b, m);
+            sleepy_dormancy_weights(dorm_weights, b, m);
 
             std::vector<tsk_id_t> dormancy_generations;
-            s3_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
+            sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
             
             std::vector<double> keys = get_keys(selection_genotypes);
             if (selection_activation_generation && gen > selection_activation_generation && keys.size() != 0) {
@@ -704,7 +687,7 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 // probably should be a function
                 std::map<int, genotype_matrix> selection_genotypes_output;
-                s3_merge_selection_genotypes(selection_genotypes_output, selection_genotypes);
+                sleepy_merge_selection_genotypes(selection_genotypes_output, selection_genotypes);
                 std::vector<int> int_keys = get_keys(selection_genotypes_output);
                 
                 
@@ -732,10 +715,10 @@ void dormancy(tsk_table_collection_t &tables,
                     tsk_id_t genotype_sum = std::accumulate(std::begin(genotype_current_gen), std::end(genotype_current_gen), 0);
                     if (genotype_sum >= (2*N*percent_fixed)) {
                         
-                        //s3_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
-                        //s3_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
+                        //sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
+                        //sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
                         
-                        //s3_simplify(tables,temp_mutations, 1);
+                        //sleepy_simplify(tables,temp_mutations, 1);
                         //std::cout << "Fixation reached" << std::endl;
 
 
@@ -774,9 +757,9 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 // exit condition upon fixation
                 if (reached_fixation == 1 && generations_post_fixation > generations_post_fixation_threshold) {
-                    s3_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
-                    s3_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
-                    s3_simplify(tables,temp_mutations, 1);
+                    sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
+                    sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
+                    sleepy_simplify(tables,temp_mutations, 1);
                     return;
                 }
                 
@@ -792,7 +775,7 @@ void dormancy(tsk_table_collection_t &tables,
                     std::vector<std::vector<double>> total_weights{};
                     for (auto k : int_keys) {
                             std::vector<double> weights;
-                            s3_weights(weights, selection_genotypes_output[k][m-1-d],
+                            sleepy_weights(weights, selection_genotypes_output[k][m-1-d],
                                       position_dominance_mapping[k],
                                       position_coefficient_mapping[k]);                      
                             total_weights.emplace_back(weights);   
@@ -871,7 +854,7 @@ void dormancy(tsk_table_collection_t &tables,
                 tsk_node_table_add_row(&tables.nodes, TSK_NODE_IS_SAMPLE, gen, TSK_NULL, TSK_NULL, NULL, 0);
                     
                 std::vector<recombination_event> recombination_events;
-                s3_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p1g1,p1g2},next_offspring_index, L);
+                sleepy_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p1g1,p1g2},next_offspring_index, L);
                 
                 if (selection_activation_generation && gen > selection_activation_generation) {     
                     
@@ -879,7 +862,7 @@ void dormancy(tsk_table_collection_t &tables,
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
                     for (auto k : lookup_selection_keys) {
                         if (!mutation_adding_generation[k]) {
-                            tsk_id_t genotype = selection_genotypes[k][m-1-dormancy_generations[parent1]][s3_gamete_position_recombination(k, recombination_events) - dormancy_updated_first_parental_index_1];
+                            tsk_id_t genotype = selection_genotypes[k][m-1-dormancy_generations[parent1]][sleepy_gamete_position_recombination(k, recombination_events) - dormancy_updated_first_parental_index_1];
                             //std::cout << "genotype: " << genotype << std::endl;
                             next_selection_genotypes[k][0][i_genotype] = genotype;
                         }
@@ -887,7 +870,7 @@ void dormancy(tsk_table_collection_t &tables,
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
-                        //s3_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
+                        //sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                         
                         
                         std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
@@ -895,7 +878,7 @@ void dormancy(tsk_table_collection_t &tables,
                         
                             //for (auto k : lookup_selection_keys) {
                             if (keep_adding_mutation) {
-                                s3_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
+                                sleepy_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                             }
                             //}
                         }
@@ -919,9 +902,9 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 mpos.clear();
                 if (mutations_in_seeds) {
-                     s3_infsites(mpos, mu, lookup, L, dormancy_generations[parent1]+1);
+                     sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent1]+1);
                 } else {
-                     s3_infsites(mpos, mu, lookup, L, 1);
+                     sleepy_infsites(mpos, mu, lookup, L, 1);
                 }
                 for (int mi=0; mi<mpos.size(); mi++) {
                     temp_mutations.emplace_back(std::pair<tsk_id_t, MutationMetaData>{next_offspring_index, {gen,mpos[mi]}});
@@ -931,12 +914,12 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 
                 recombination_events.clear();
-                s3_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p2g1,p2g2},next_offspring_index, L);
+                sleepy_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p2g1,p2g2},next_offspring_index, L);
                 if (selection_activation_generation && gen > selection_activation_generation) {
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
                     for (auto k : lookup_selection_keys) {
                         if (!mutation_adding_generation[k]) {
-                            tsk_id_t genotype = selection_genotypes[k][m-1-dormancy_generations[parent2]][s3_gamete_position_recombination(k, recombination_events) - dormancy_updated_first_parental_index_2];
+                            tsk_id_t genotype = selection_genotypes[k][m-1-dormancy_generations[parent2]][sleepy_gamete_position_recombination(k, recombination_events) - dormancy_updated_first_parental_index_2];
                             //std::cout << "genotype: " << genotype << std::endl;
                             next_selection_genotypes[k][0][i_genotype] = genotype;
                         }
@@ -944,13 +927,13 @@ void dormancy(tsk_table_collection_t &tables,
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
-                        //s3_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
+                        //sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
 
                         /*
                         std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
                         for (auto k : lookup_selection_keys) {
                             if (lookup_selection.size() == 0) {
-                                s3_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
+                                sleepy_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                             }
                         }
                         */
@@ -976,9 +959,9 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 mpos.clear();
                 if (mutations_in_seeds) {
-                     s3_infsites(mpos, mu, lookup, L, dormancy_generations[parent2]+1);
+                     sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent2]+1);
                 } else {
-                     s3_infsites(mpos, mu, lookup, L, 1);
+                     sleepy_infsites(mpos, mu, lookup, L, 1);
                 }                
                 
                 
@@ -1054,9 +1037,9 @@ void dormancy(tsk_table_collection_t &tables,
                 std::cout << "fixed: " << fixed_mutations[i] << std::endl;
                 print_int_vector(selection_genotypes[fixed_mutations[i]][m-1]);
                 
-                s3_add_time(tables.nodes, c+1, 0, tables.nodes.num_rows-2*N*(c+1));
-                s3_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c+1), tables.nodes.num_rows);  
-                s3_simplify(tables,temp_mutations, 1);
+                sleepy_add_time(tables.nodes, c+1, 0, tables.nodes.num_rows-2*N*(c+1));
+                sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c+1), tables.nodes.num_rows);  
+                sleepy_simplify(tables,temp_mutations, 1);
                 return;
             }
             */
@@ -1071,8 +1054,8 @@ void dormancy(tsk_table_collection_t &tables,
             num_generation++; 
         }
         
-        s3_add_time(tables.nodes, gc, 0, tables.nodes.num_rows-2*N*gc);
-        s3_reverse_time(tables.nodes, tables.nodes.num_rows-2*N*gc, tables.nodes.num_rows);  
+        sleepy_add_time(tables.nodes, gc, 0, tables.nodes.num_rows-2*N*gc);
+        sleepy_reverse_time(tables.nodes, tables.nodes.num_rows-2*N*gc, tables.nodes.num_rows);  
                 
         
         
@@ -1123,14 +1106,14 @@ void dormancy(tsk_table_collection_t &tables,
         if (stop_after_mrca) {
             tsk_table_collection_t tables_copy;
             ret = tsk_table_collection_copy(&tables, &tables_copy, 0);
-            s3_simplify(tables_copy,temp_mutations, 1);
-            if (s3_mrca_found(tables_copy)) {
-                s3_simplify(tables,temp_mutations, 1);
+            sleepy_simplify(tables_copy,temp_mutations, 1);
+            if (sleepy_mrca_found(tables_copy)) {
+                sleepy_simplify(tables,temp_mutations, 1);
                 return;
             }
         }
         
-        s3_simplify(tables,temp_mutations, m);
+        sleepy_simplify(tables,temp_mutations, m);
 
 
         temp_mutations.clear();
@@ -1144,6 +1127,6 @@ void dormancy(tsk_table_collection_t &tables,
 
     
 
-    s3_simplify(tables, temp_mutations, 1) ;
+    sleepy_simplify(tables, temp_mutations, 1) ;
     
 }

@@ -30,3 +30,67 @@ TEST(test_sleepy_init_tables, sleepy_init_tables) {
   EXPECT_EQ(tables2.nodes.num_rows, 2*N*m);
   tsk_table_collection_free(&tables2);
 }
+
+TEST(test_sleepy_reverse_time, sleepy_reverse_time) {
+  tsk_table_collection_t tables;  
+  tsk_table_collection_init(&tables, 0);
+  sleepy_init_tables(&tables, 3, 3, 0);
+
+  int begin = 2;
+  int end = 10;
+  int length = end - begin;
+  std::vector<int> times;
+
+  for (int i=begin; i<end; i++) {
+      times.emplace_back(tables.nodes.time[i]);
+  }
+
+  sleepy_reverse_time(tables.nodes, begin, end);
+  std::vector<int> times_after_reversing;
+  for (int i=begin; i<end; i++) {
+      times_after_reversing.emplace_back(tables.nodes.time[i]);
+  }
+
+  for (int i = 0; i < times.size(); ++i) {
+    ASSERT_NE(times_after_reversing[i], times[i]) << "After first reversing equal at " << times[i];
+  }
+
+  sleepy_reverse_time(tables.nodes, begin, end);
+  ASSERT_EQ(times.size(), length) << "Unequal size " << times.size() << " " << length;
+  for (int i = 0; i < times.size(); ++i) {
+    ASSERT_EQ(times[i], tables.nodes.time[begin+i]) << "After second reversing unequal at " << times[i] << " " << tables.nodes.time[i];
+  }
+
+}
+
+TEST(test_sleepy_reverse_time2, sleepy_reverse_time) {
+  tsk_table_collection_t tables;  
+  tsk_table_collection_init(&tables, 0);
+  sleepy_init_tables(&tables, 3, 3, 0);
+
+  int begin = 0;
+  int end = 10;
+  int length = end - begin;
+  std::vector<int> times;
+
+  for (int i=begin; i<end; i++) {
+      times.emplace_back(tables.nodes.time[i]);
+  }
+
+  sleepy_reverse_time(tables.nodes, begin, end);
+  std::vector<int> times_after_reversing;
+  for (int i=begin; i<end; i++) {
+      times_after_reversing.emplace_back(tables.nodes.time[i]);
+  }
+
+  for (int i = 0; i < times.size(); ++i) {
+    ASSERT_NE(times_after_reversing[i], times[i]) << "After first reversing equal at " << times[i];
+  }
+
+  sleepy_reverse_time(tables.nodes, begin, end);
+  ASSERT_EQ(times.size(), length) << "Unequal size " << times.size() << " " << length;
+  for (int i = 0; i < times.size(); ++i) {
+    ASSERT_EQ(times[i], tables.nodes.time[begin+i]) << "After second reversing unequal at " << times[i] << " " << tables.nodes.time[i];
+  }
+
+}
