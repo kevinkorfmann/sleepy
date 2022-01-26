@@ -94,3 +94,16 @@ TEST(test_sleepy_reverse_time2, sleepy_reverse_time) {
   }
 
 }
+
+
+
+TEST(test_sleepy_num_non_sample_node, sleepy_num_non_sample_node) {
+  int gen = 0;
+  tsk_table_collection_t tables;
+  tsk_table_collection_init(&tables, 0);
+  sleepy_init_tables(&tables, 3, 2, gen);
+  tables.nodes.flags[0] = 0;
+  tables.nodes.flags[4] = 0;
+  tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
+  EXPECT_EQ(num_non_sample, 2);
+}

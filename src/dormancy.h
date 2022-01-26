@@ -44,6 +44,15 @@ void sleepy_init_tables(tsk_table_collection_t *self, int N=3, int m=1, int gen=
     }
 }
 
+tsk_id_t sleepy_num_non_sample_node(tsk_node_table_t &nodes) {
+    tsk_id_t num_non_sample{0};
+    for (int i=0; i<nodes.num_rows; i++) {
+        if (nodes.flags[i] != 1) {
+            num_non_sample++;
+        }
+    }
+    return num_non_sample;
+}
 
 struct mutation_info {
     std::vector<int> origin_generation;
@@ -637,20 +646,11 @@ void dormancy(tsk_table_collection_t &tables,
 
 
         tsk_id_t next_offspring_index = tables.nodes.num_rows;
-        
-        tsk_id_t num_non_sample{0};
-        for (int i=0; i<tables.nodes.num_rows; i++) {
-            if (tables.nodes.flags[i] != 1) {
-                num_non_sample++;
-            }
-        }
-        
+        tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
         tsk_id_t first_parental_index = next_offspring_index - (2*N) - num_non_sample;
         
 
         for (int c=0; c<gc; c++) {
-
-
 
 
             if (reached_fixation == 1) {
