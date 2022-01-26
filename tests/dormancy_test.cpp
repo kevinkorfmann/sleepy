@@ -96,7 +96,6 @@ TEST(test_sleepy_reverse_time2, sleepy_reverse_time) {
 }
 
 
-
 TEST(test_sleepy_num_non_sample_node, sleepy_num_non_sample_node) {
   int gen = 0;
   tsk_table_collection_t tables;
@@ -106,4 +105,20 @@ TEST(test_sleepy_num_non_sample_node, sleepy_num_non_sample_node) {
   tables.nodes.flags[4] = 0;
   tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
   EXPECT_EQ(num_non_sample, 2);
+}
+
+TEST(test_sleepy_dormancy_weights, sleepy_dormancy_weights) {
+
+  int m = 5;
+  double b = 1.0;
+  std::vector<double> dorm_weights;
+  sleepy_dormancy_weights(dorm_weights, b, m);
+
+  ASSERT_EQ(dorm_weights.size(), m) << "dorm_weights: " << dorm_weights.size() << "m " << m;
+
+
+  dorm_weights.clear();
+  b = 1.2;
+  ASSERT_DEATH(sleepy_dormancy_weights(dorm_weights, b, m), "");
+
 }

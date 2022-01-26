@@ -16,6 +16,7 @@
 #include <iomanip>  // std::setprecision()
 
 #include <new>
+#include <cassert>
 
 #include<map>
 
@@ -240,16 +241,28 @@ void stats_random_real(double &output, int start, int end)
     output = d(generator); 
 }
 
+
 void sleepy_dormancy_weights(std::vector<double> &weights, double b, tsk_id_t m)
 {
+    /* assert don't work in jupyter-cpp kernel */
+    assert(("germination rate needs to be in [1,0[ interval.", b <= 1 && b > 0));
+    
     for (int i=0; i<m; i++) {
         weights.emplace_back(b * pow((1-b), i-1));
     }
     double sum = std::accumulate(std::begin(weights), std::end(weights), 0.0);
+    
+    
     for (int i=0; i<weights.size(); i++) {
         weights[i] = weights[i] / sum;
+        
+        /* all weights will be zero if b == 1*/
+        /* otherwise  weights[0] == -nan */
+        
+        if (b == 1.0) weights[i] = 0;
     }
 }
+
 
 void sleepy_dormancy_generation(std::vector<tsk_id_t> &dormancy_generations, std::vector<double> &weights, tsk_id_t N) 
 {
@@ -647,7 +660,7 @@ void dormancy(tsk_table_collection_t &tables,
 
         tsk_id_t next_offspring_index = tables.nodes.num_rows;
         tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
-        tsk_id_t first_parental_index = next_offspring_index - (2*N) - num_non_sample;
+        tsk_id_t first_parental_index = next_offspring_index - (2*N) - num_non_sample; /* num_non_sample will be 0 during first iteration */
         
 
         for (int c=0; c<gc; c++) {
