@@ -678,14 +678,11 @@ void dormancy(tsk_table_collection_t &tables,
 
             if (reached_fixation == 1) {
                 generations_post_fixation++;
-                if (add_mutations_after_fixation) {
-                    keep_adding_mutation = true;
-                } else {
-                    keep_adding_mutation = false;
-                }
+                if (add_mutations_after_fixation) { keep_adding_mutation = true; } 
+                else { keep_adding_mutation = false; }
             }
             
-            // exit condition upon fixation
+            /* exit condition upon fixation */
             if (reached_fixation == 1 && generations_post_fixation > generations_post_fixation_threshold) {
                 sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
                 sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
@@ -696,7 +693,6 @@ void dormancy(tsk_table_collection_t &tables,
 
             std::vector<double> dorm_weights; sleepy_dormancy_weights(dorm_weights, b, m);
             std::vector<tsk_id_t> dormancy_generations; sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
-            
             std::vector<double> keys = get_keys(selection_genotypes);
 
 
@@ -766,9 +762,9 @@ void dormancy(tsk_table_collection_t &tables,
                 }
                 
                 
+                /* retrieving parents based on genotypes associated selection and dominance coefficents from the given generation*/
                 parents.clear();
                 for(auto d : dormancy_generations) {
-                    
                     std::vector<std::vector<double>> total_weights{};
                     for (auto k : current_active_generations_int) {
                             std::vector<double> weights;
@@ -777,7 +773,6 @@ void dormancy(tsk_table_collection_t &tables,
                                       position_coefficient_mapping[k]);                      
                             total_weights.emplace_back(weights);   
                     }
-                        
                     std::vector<double> multiplied_weights;
                     for (int j=0; j<total_weights[0].size(); j++) {
                         double weight = 1;
@@ -799,6 +794,8 @@ void dormancy(tsk_table_collection_t &tables,
                     
 
             } else {
+
+                /* no selection */
                 parents.clear();
                 stats_random_discrete(parents, std::vector<double>(N, 1), 2*N);
             }
@@ -891,7 +888,7 @@ void dormancy(tsk_table_collection_t &tables,
                     }                    
                 }
                 
-                // adding edges
+                /* adding edges */
                 for (int re=0; re<recombination_events.size(); re++) {
                     ret = tsk_edge_table_add_row(&tables.edges, recombination_events[re].left, recombination_events[re].right, recombination_events[re].parent, recombination_events[re].child, NULL, 0);
                 }
@@ -914,10 +911,12 @@ void dormancy(tsk_table_collection_t &tables,
 
                 /* same as above but currenly no mutation is added */
                 
-                
                 recombination_events.clear();
                 sleepy_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p2g1,p2g2},next_offspring_index, L);
 
+
+                /* no selective mutation is added on the second parent */
+                /*
 
                 if (selection_activation_generation && gen > selection_activation_generation) {
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
@@ -931,18 +930,6 @@ void dormancy(tsk_table_collection_t &tables,
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
-                        //sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
-
-                        /*
-                        std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
-                        for (auto k : lookup_selection_keys) {
-                            if (lookup_selection.size() == 0) {
-                                sleepy_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
-                            }
-                        }
-                        */
-
-
                         for (auto mi : mpos_selection) {
                             recorder.insert(mi, selection_generation, 1, selection_coefficients[i], dominance_coefficients[i], lookup_selection.size(), gen);
                             mutation_adding_generation[mi] = true;
@@ -953,33 +940,25 @@ void dormancy(tsk_table_collection_t &tables,
                         }
                     }
                 }
-  
 
-                    
+                */
+  
                 
                 for (int re=0; re<recombination_events.size(); re++) {
                     ret = tsk_edge_table_add_row(&tables.edges, recombination_events[re].left, recombination_events[re].right, recombination_events[re].parent, recombination_events[re].child, NULL, 0);
                 }
                 
+                /* neutral mutations */
                 mpos.clear();
-                if (mutations_in_seeds) {
-                     sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent2]+1);
-                } else {
-                     sleepy_infsites(mpos, mu, lookup, L, 1);
-                }                
-                
-                
-                for (int mi=0; mi<mpos.size(); mi++) {
-                    temp_mutations.emplace_back(std::pair<tsk_id_t, MutationMetaData>{next_offspring_index, {gen,mpos[mi]}});
-                }
+                if (mutations_in_seeds) { sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent2]+1); } 
+                else { sleepy_infsites(mpos, mu, lookup, L, 1); }                
+                for (int mi=0; mi<mpos.size(); mi++) { temp_mutations.emplace_back(std::pair<tsk_id_t, MutationMetaData>{next_offspring_index, {gen,mpos[mi]}}); }
+
                 i_genotype++;
                 next_offspring_index++;
                 
             }
-            
-            
-            //tsk_node_table_print_state(&tables.nodes, stdout);
-            
+                        
     
             
             first_parental_index = tables.nodes.num_rows - 2*N;
@@ -1007,7 +986,6 @@ void dormancy(tsk_table_collection_t &tables,
             for (auto k : lookup_selection_keys) {
 
                 if (std::accumulate(std::begin(next_selection_genotypes[k][0]), std::end(next_selection_genotypes[k][0]),0) == 0) {
-
                     lost_mutations.emplace_back(k);
 
                 } else {
@@ -1015,6 +993,7 @@ void dormancy(tsk_table_collection_t &tables,
                     next_selection_genotypes[k] = genotype_matrix(1, std::vector(2*N, 0));
                 }
             }
+
             
             for (int i=0; i<lost_mutations.size(); i++) {
 
@@ -1051,49 +1030,6 @@ void dormancy(tsk_table_collection_t &tables,
         sleepy_reverse_time(tables.nodes, tables.nodes.num_rows-2*N*gc, tables.nodes.num_rows);  
                 
         
-        
-        /*
-        ret = tsk_table_collection_build_index(&tables, 0);
-        check_tsk_error(ret);
-        tsk_treeseq_t ts;
-        ret = tsk_treeseq_init(&ts, &tables, 0);
-        check_tsk_error(ret);
-        int num_mutations = tsk_treeseq_get_num_mutations(&ts);
-        int num_samples = tsk_treeseq_get_num_samples(&ts);
-        tsk_vargen_t vargen;
-        tsk_variant_t *variant;
-        tsk_vargen_init(&vargen, &ts, ts.samples, num_samples, NULL , 0);
-        int i=0;
-        while(tsk_vargen_next(&vargen, &variant) != 0) {
-
-            double position = tables.sites.position[i];
-            std::cout << i << " " << position << " : ";
-            int population_abundance = 0;
-            int n = 0;
-            for (int s=0; s<2*N; s++) {
-                int state = (int) vargen.variant.genotypes.i8[s];
-                if (state == 1) {
-                    n++;
-                }
-                std::cout << state;
-            }
-            std::cout << std::endl;
-            if (n == 2*N) return;
-            i++;
-        }
-        
-        std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
-        if (lookup_selection_keys.size() != 0) {
-            //print_genotypes(selection_genotypes);
-    
-            for (auto k : lookup_selection_keys) {
-                std::cout << "k " << k << " : ";
-                print_int_vector2(selection_genotypes[k][m-1]);
-                std::cout << std::endl;
-            }
-        }
-        
-        */
         
         
         if (stop_after_mrca) {
