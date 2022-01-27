@@ -55,15 +55,6 @@ tsk_id_t sleepy_num_non_sample_node(tsk_node_table_t &nodes) {
     return num_non_sample;
 }
 
-void sleepy_random_gamete_switch(tsk_id_t &gamete1, tsk_id_t &gamete2){
-    double mendel = 0;
-    stats_random_real(mendel, 0, 1);
-    if (mendel < 0.5) {
-        tsk_id_t tmp = gamete1;
-        gamete1 = gamete2;
-        gamete2 = tmp;
-    }
-}
 
 struct mutation_info {
     std::vector<int> origin_generation;
@@ -251,6 +242,16 @@ void stats_random_real(double &output, int start, int end)
     output = d(generator); 
 }
 
+void sleepy_random_gamete_switch(tsk_id_t &gamete1, tsk_id_t &gamete2){
+    double mendel = 0;
+    stats_random_real(mendel, 0, 1);
+    if (mendel < 0.5) {
+        tsk_id_t tmp = gamete1;
+        gamete1 = gamete2;
+        gamete2 = tmp;
+    }
+}
+
 
 void sleepy_dormancy_weights(std::vector<double> &weights, double b, tsk_id_t m)
 {
@@ -416,6 +417,7 @@ void sleepy_recombination_events(std::vector<recombination_event> &recombination
     }
 }
 
+/* returns the parent of the mutation */
 tsk_id_t sleepy_gamete_position_recombination(double position, std::vector<recombination_event> &recombination_events)
 {
     for (int i=0; i<recombination_events.size(); i++) {
@@ -638,7 +640,7 @@ void dormancy(tsk_table_collection_t &tables,
         mu_selection_rates[i] = 4 * N * mu_selection_rates[i];
     }
     
-    
+    /* selection genotypes stores the genotypes of mutations under selection for m generations */
     std::map<double, genotype_matrix> selection_genotypes, next_selection_genotypes;
 
     std::map<double, bool> lookup, lookup_selection;
@@ -649,6 +651,7 @@ void dormancy(tsk_table_collection_t &tables,
     std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations;
     std::map<double, bool> mutation_adding_generation;
     
+    /* vectors storing position of mutations */
     std::vector<double> mpos_selection, mpos;
     
     std::vector<tsk_id_t> parents;
@@ -855,48 +858,71 @@ void dormancy(tsk_table_collection_t &tables,
                 if (selection_activation_generation && gen > selection_activation_generation) {     
                     
                     
+                    /* get_keys simply retries all mutations currently under selection and saves them in lookup_selection_keys */
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
+
                     for (auto k : lookup_selection_keys) {
+                        
+                        /* mutation_adding_generation checks if it is the first generation were mutation is added; so it doesn't get added to multiple individuals */
+                        /* tldr: only runs if mutation was already introduced below */
                         if (!mutation_adding_generation[k]) {
-                            tsk_id_t genotype = selection_genotypes[k][m-1-dormancy_generations[parent1]][sleepy_gamete_position_recombination(k, recombination_events) - dormancy_updated_first_parental_index_1];
-                            //std::cout << "genotype: " << genotype << std::endl;
-                            next_selection_genotypes[k][0][i_genotype] = genotype;
+
+                            int mutation_generation = m-1-dormancy_generations[parent1];
+                            int mutation_parent = sleepy_gamete_position_recombination(k, recombination_events);
+
+                            /* parent idx has to be between 0 and 2*N */
+                            mutation_parent = mutation - dormancy_updated_first_parental_index_1;
+
+                            tsk_id_t genotype = selection_genotypes[k][mutation_generation][mutation_parent];
+
+                            /* i_genotype counter variable*/
+                            next_selection_genotypes[k][0][i_genotype] = genotype; 
                         }
                     }
                     
+                    /* introducing new mutations under selection */
+                    /* in original code multiple mutations could be introduced each mutation having a different mutation rate */
+                    /* code was changed to just add a single mutation at a fixed position independet of rate */
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
                         //sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                         
-                        
+                        /* retrieve mutations currently under selection */
                         std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
+
+
+                        /* if no other mutation is present in currently add a mutation*/
                         if (lookup_selection.size() == 0) {
-                        
-                            //for (auto k : lookup_selection_keys) {
                             if (keep_adding_mutation) {
                                 sleepy_fsites_determined(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                             }
-                            //}
                         }
                         
-
 
                         for (auto mi : mpos_selection) {
                             recorder.insert(mi, selection_generation, 1, selection_coefficients[i], dominance_coefficients[i], lookup_selection.size(), gen);
                             mutation_adding_generation[mi] = true;
                             temp_mutations.emplace_back(std::pair<tsk_id_t, MutationMetaData>{next_offspring_index, {gen,mi}});
+
+                            /* keeping track of genotypes independently of tskit */
+                            /* empty genotype matrix */
                             selection_genotypes[mi] = genotype_matrix(m, std::vector(2*N, 0));
+
+                            /* saving next selection genotypes with added genotype */
                             next_selection_genotypes[mi] = genotype_matrix(1, std::vector(2*N, 0));
+
                             next_selection_genotypes[mi][0][i_genotype] = 1;
                         }
                     }                    
                 }
                 
+                // adding edges
                 for (int re=0; re<recombination_events.size(); re++) {
                     ret = tsk_edge_table_add_row(&tables.edges, recombination_events[re].left, recombination_events[re].right, recombination_events[re].parent, recombination_events[re].child, NULL, 0);
                 }
                 
+                /* mutations in seeds currently never used */
                 mpos.clear();
                 if (mutations_in_seeds) {
                      sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent1]+1);
@@ -908,6 +934,11 @@ void dormancy(tsk_table_collection_t &tables,
                 }
                 i_genotype++;
                 next_offspring_index++;
+
+
+
+
+                /* same as above but currenly no mutation is added */
                 
                 
                 recombination_events.clear();
@@ -978,11 +1009,17 @@ void dormancy(tsk_table_collection_t &tables,
     
             
             first_parental_index = tables.nodes.num_rows - 2*N;
-            
+            /* get keys currenlty under selection */
+
             std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
+
+            /* shifting  selection_genotypes one generation into the past */
             if (m > 1) {
                 for (int mi=0; mi<lookup_selection_keys.size(); mi++) {
                     for (int i=1; i<m; i++) {
+                        
+                        /* last selection_genotypes will stay the same */
+                        /* first row will get overwritten */
                         selection_genotypes[lookup_selection_keys[mi]][i-1] =  selection_genotypes[lookup_selection_keys[mi]][i]; 
                     }
                 }
@@ -994,14 +1031,7 @@ void dormancy(tsk_table_collection_t &tables,
             //std::vector<double> fixed_mutations;
             
             for (auto k : lookup_selection_keys) {
-                //if (std::accumulate(std::begin(next_selection_genotypes[k][0]), std::end(next_selection_genotypes[k][0]),0) == 2*N) {
-                    
-                    //std::cout << "loop: ";
-                    //print_int_vector(next_selection_genotypes[k][0]);
-                    
-                    //fixed_mutations.emplace_back(k);
-                //}
-                //else 
+
                 if (std::accumulate(std::begin(next_selection_genotypes[k][0]), std::end(next_selection_genotypes[k][0]),0) == 0) {
                     lost_mutations.emplace_back(k);
                 } else {
@@ -1011,6 +1041,7 @@ void dormancy(tsk_table_collection_t &tables,
             }
             
             for (int i=0; i<lost_mutations.size(); i++) {
+
                 lookup_selection.erase(lost_mutations[i]);
                 selection_genotypes.erase(lost_mutations[i]);
                 next_selection_genotypes.erase(lost_mutations[i]);
@@ -1019,29 +1050,18 @@ void dormancy(tsk_table_collection_t &tables,
 
             
             for (auto k : lookup_selection_keys) {
-                //std::cout << k << std::endl;
-                //std::cout << fixed_mutations[(int) k] << std::endl;
+
                 if (fixed_mutations[(int) k] > 50) {
+
                     lookup_selection.erase(k);
                     selection_genotypes.erase(k);
                     next_selection_genotypes.erase(k);
                     fixed_mutations.erase((int) k);
+
                 }
             }
 
-            
-            /*
-            for (int i=0; i<fixed_mutations.size(); i++) {
-                
-                std::cout << "fixed: " << fixed_mutations[i] << std::endl;
-                print_int_vector(selection_genotypes[fixed_mutations[i]][m-1]);
-                
-                sleepy_add_time(tables.nodes, c+1, 0, tables.nodes.num_rows-2*N*(c+1));
-                sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c+1), tables.nodes.num_rows);  
-                sleepy_simplify(tables,temp_mutations, 1);
-                return;
-            }
-            */
+        
             
             
             std::vector<double> mutation_adding_generation_keys = get_keys(mutation_adding_generation);

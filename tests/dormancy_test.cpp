@@ -137,4 +137,15 @@ TEST(test_sleepy_dormancy_generation, sleepy_dormancy_generation) {
 
 }
 
+TEST(test_sleepy_recombination_events, sleepy_recombination_events) {
+  std::vector<recombination_event> recombination_events;
+  double r = 1;
+  std::pair<tsk_id_t, tsk_id_t> parent_idxs = {3, 4};
+  tsk_id_t next_offspring_id = 12;
+  double L = 10;
 
+  sleepy_recombination_events(recombination_events, r, parent_idxs, next_offspring_id, L);
+  EXPECT_EQ(recombination_events[0].left, 0);
+  EXPECT_EQ(recombination_events[recombination_events.size()-1].right, L);
+
+}
