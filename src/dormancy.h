@@ -549,12 +549,12 @@ void sleepy_merge_selection_genotypes(std::map<int, genotype_matrix> &selection_
         }
     }
     
-    std::vector<int> int_keys(keys.begin(), keys.end());
-    int_keys.erase(std::unique(int_keys.begin(), int_keys.end()), int_keys.end());
+    std::vector<int> current_active_generations_int(keys.begin(), keys.end());
+    current_active_generations_int.erase(std::unique(current_active_generations_int.begin(), current_active_generations_int.end()), current_active_generations_int.end());
 
     merged_genotypes.emplace_back(current_genotype);
-    for (int i=0; i<int_keys.size(); i++) {
-        selection_genotypes_output[int_keys[i]] = merged_genotypes[i];
+    for (int i=0; i<current_active_generations_int.size(); i++) {
+        selection_genotypes_output[current_active_generations_int[i]] = merged_genotypes[i];
     }
 }
 
@@ -644,9 +644,7 @@ void dormancy(tsk_table_collection_t &tables,
     std::map<double, genotype_matrix> selection_genotypes, next_selection_genotypes;
 
     std::map<double, bool> lookup, lookup_selection;
-    
-    std::map<double, int> fixed_mutations;
-    std::map<double, int> prev_generation;
+    std::map<double, int> fixed_mutations, prev_generation;
 
     std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations;
     std::map<double, bool> mutation_adding_generation;
@@ -678,7 +676,6 @@ void dormancy(tsk_table_collection_t &tables,
 
         for (int c=0; c<gc; c++) {
 
-
             if (reached_fixation == 1) {
                 generations_post_fixation++;
                 if (add_mutations_after_fixation) {
@@ -697,24 +694,29 @@ void dormancy(tsk_table_collection_t &tables,
             }
 
 
-            
-            std::vector<double> dorm_weights;
-            sleepy_dormancy_weights(dorm_weights, b, m);
-
-            std::vector<tsk_id_t> dormancy_generations;
-            sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
+            std::vector<double> dorm_weights; sleepy_dormancy_weights(dorm_weights, b, m);
+            std::vector<tsk_id_t> dormancy_generations; sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
             
             std::vector<double> keys = get_keys(selection_genotypes);
+
+
+            /* selection and at least one active selective mutation */
             if (selection_activation_generation && gen > selection_activation_generation && keys.size() != 0) {
                 selection_generation++;
                 
-                // probably should be a function
+                /* probably should be a function */
                 std::map<int, genotype_matrix> selection_genotypes_output;
                 sleepy_merge_selection_genotypes(selection_genotypes_output, selection_genotypes);
-                std::vector<int> int_keys = get_keys(selection_genotypes_output);
+
+
+                /* usually should be just one */
+                std::vector<int> current_active_generations_int = get_keys(selection_genotypes_output);
+                assert(("current active generations is not equal to one", current_active_generations_int.size() == 1));
+
+
                 
                 
-                // update recorder
+                /* update recorder */
                 std::vector<double> keys = get_keys(selection_genotypes);
                 for (auto k : keys) {
                     genotype_matrix gm = selection_genotypes[k];
@@ -725,10 +727,10 @@ void dormancy(tsk_table_collection_t &tables,
                     }
                 }
                 
-                
-                
-                for (auto k : int_keys) {
-                    // check if any mutation has reached fixation
+
+                /* check if any mutation has reached fixation */
+                for (auto k : current_active_generations_int) {
+                    
                     genotype_matrix gm = selection_genotypes_output[k];
                     std::vector<tsk_id_t> genotype_current_gen = gm[m-1];
                     
@@ -738,46 +740,24 @@ void dormancy(tsk_table_collection_t &tables,
                     tsk_id_t genotype_sum = std::accumulate(std::begin(genotype_current_gen), std::end(genotype_current_gen), 0);
                     if (genotype_sum >= (2*N*percent_fixed)) {
                         
-                        //sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
-                        //sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
-                        
-                        //sleepy_simplify(tables,temp_mutations, 1);
-                        //std::cout << "Fixation reached" << std::endl;
-
-
-
                         // currently only works for single sweep
-                        if (prev_generation.count(k) && num_generation - prev_generation[k] == 1) {
-                            fixed_mutations[k]++;
-                        } else {
-                            fixed_mutations[k] == 1;
-                        }
+                        if (prev_generation.count(k) && num_generation - prev_generation[k] == 1) { fixed_mutations[k]++; } 
+                        else { fixed_mutations[k] == 1; }
 
-                        
-                        if (fixed_mutations[k] >= 50) {
-                            reached_fixation = 1;
-                        }
-                        
-                            
+                        if (fixed_mutations[k] >= 50) { reached_fixation = 1; }
                         prev_generation[k] = num_generation;
-
-
-                        
                     }
                 }
 
 
+                /* necessay for recovery */
                 if (reached_fixation == 1) {
                     generations_post_fixation++;
-                    if (add_mutations_after_fixation) {
-                        keep_adding_mutation = true;
-                    } else {
-                        keep_adding_mutation = false;
-                    }
+                    if (add_mutations_after_fixation) { keep_adding_mutation = true; } 
+                    else { keep_adding_mutation = false; }
                 }
                 
-                
-                // exit condition upon fixation
+                /* exit condition upon fixation */
                 if (reached_fixation == 1 && generations_post_fixation > generations_post_fixation_threshold) {
                     sleepy_add_time(tables.nodes, c, 0, tables.nodes.num_rows-2*N*(c));
                     sleepy_reverse_time(tables.nodes, tables.nodes.num_rows -2*N*(c), tables.nodes.num_rows);  
@@ -786,16 +766,11 @@ void dormancy(tsk_table_collection_t &tables,
                 }
                 
                 
-                
-                
-                
-                
                 parents.clear();
-                
                 for(auto d : dormancy_generations) {
                     
                     std::vector<std::vector<double>> total_weights{};
-                    for (auto k : int_keys) {
+                    for (auto k : current_active_generations_int) {
                             std::vector<double> weights;
                             sleepy_weights(weights, selection_genotypes_output[k][m-1-d],
                                       position_dominance_mapping[k],
@@ -811,7 +786,6 @@ void dormancy(tsk_table_collection_t &tables,
                         }
                         multiplied_weights.emplace_back(weight);
                     }
-                    
                     
                     double sum = std::accumulate(std::begin(multiplied_weights), std::end(multiplied_weights), 0.0);
                     for (int i=0; i<multiplied_weights.size(); i++) {
@@ -871,7 +845,7 @@ void dormancy(tsk_table_collection_t &tables,
                             int mutation_parent = sleepy_gamete_position_recombination(k, recombination_events);
 
                             /* parent idx has to be between 0 and 2*N */
-                            mutation_parent = mutation - dormancy_updated_first_parental_index_1;
+                            mutation_parent = mutation_parent - dormancy_updated_first_parental_index_1;
 
                             tsk_id_t genotype = selection_genotypes[k][mutation_generation][mutation_parent];
 
@@ -1017,7 +991,7 @@ void dormancy(tsk_table_collection_t &tables,
             if (m > 1) {
                 for (int mi=0; mi<lookup_selection_keys.size(); mi++) {
                     for (int i=1; i<m; i++) {
-                        
+
                         /* last selection_genotypes will stay the same */
                         /* first row will get overwritten */
                         selection_genotypes[lookup_selection_keys[mi]][i-1] =  selection_genotypes[lookup_selection_keys[mi]][i]; 
@@ -1033,7 +1007,9 @@ void dormancy(tsk_table_collection_t &tables,
             for (auto k : lookup_selection_keys) {
 
                 if (std::accumulate(std::begin(next_selection_genotypes[k][0]), std::end(next_selection_genotypes[k][0]),0) == 0) {
+
                     lost_mutations.emplace_back(k);
+
                 } else {
                     selection_genotypes[k][m-1] = next_selection_genotypes[k][0];
                     next_selection_genotypes[k] = genotype_matrix(1, std::vector(2*N, 0));
@@ -1060,8 +1036,6 @@ void dormancy(tsk_table_collection_t &tables,
 
                 }
             }
-
-        
             
             
             std::vector<double> mutation_adding_generation_keys = get_keys(mutation_adding_generation);
