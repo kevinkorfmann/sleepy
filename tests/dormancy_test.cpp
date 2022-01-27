@@ -122,3 +122,19 @@ TEST(test_sleepy_dormancy_weights, sleepy_dormancy_weights) {
   ASSERT_DEATH(sleepy_dormancy_weights(dorm_weights, b, m), "");
 
 }
+
+TEST(test_sleepy_dormancy_generation, sleepy_dormancy_generation) {
+
+  int m = 5;
+  double b = 1.0;
+  int N = 2;
+  std::vector<double> dorm_weights;
+  sleepy_dormancy_weights(dorm_weights, b, m);
+  std::vector<tsk_id_t> dormancy_generations; 
+  sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
+  ASSERT_EQ(dormancy_generations.size(), 2*N);
+  
+
+}
+
+

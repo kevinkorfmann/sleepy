@@ -55,6 +55,16 @@ tsk_id_t sleepy_num_non_sample_node(tsk_node_table_t &nodes) {
     return num_non_sample;
 }
 
+void sleepy_random_gamete_switch(tsk_id_t &gamete1, tsk_id_t &gamete2){
+    double mendel = 0;
+    stats_random_real(mendel, 0, 1);
+    if (mendel < 0.5) {
+        tsk_id_t tmp = gamete1;
+        gamete1 = gamete2;
+        gamete2 = tmp;
+    }
+}
+
 struct mutation_info {
     std::vector<int> origin_generation;
     double selection_coefficient;
@@ -819,45 +829,23 @@ void dormancy(tsk_table_collection_t &tables,
             tsk_id_t i_genotype = 0;
             for (int p=0; p<parents.size(); p+=2) {
                 
-                
-                
+                /* way too complicated dormancy index updating dependent on state in the simplication process */
                 tsk_id_t parent1 = parents[p];
                 tsk_id_t parent2 = parents[p+1];
-                
                 tsk_id_t dormancy_updated_first_parental_index_1 = first_parental_index - (2*N*dormancy_generations[parent1]); 
                 tsk_id_t dormancy_updated_first_parental_index_2 = first_parental_index - (2*N*dormancy_generations[parent2]); 
-                
-                if (c > 0 && (2*N*dormancy_generations[parent1]) >= c*2*N) {
-                       dormancy_updated_first_parental_index_1 -= num_non_sample;
-                }
-                
-                if (c > 0 && (2*N*dormancy_generations[parent2]) >= c*2*N) {
-                       dormancy_updated_first_parental_index_2 -= num_non_sample;
-                }
-
+                if (c > 0 && (2*N*dormancy_generations[parent1]) >= c*2*N) { dormancy_updated_first_parental_index_1 -= num_non_sample; }
+                if (c > 0 && (2*N*dormancy_generations[parent2]) >= c*2*N) { dormancy_updated_first_parental_index_2 -= num_non_sample; }
                 tsk_id_t p1g1 = dormancy_updated_first_parental_index_1 + 2*parent1;
                 tsk_id_t p1g2 = p1g1+1;
                 tsk_id_t p2g1 = dormancy_updated_first_parental_index_2 + 2*parent2;
                 tsk_id_t p2g2 = p2g1+1;
-                    
-                double mendel1 = 0;
-                double mendel2 = 0;
-                stats_random_real(mendel1, 0, 1);
-                stats_random_real(mendel2, 0, 1);
-                
-                if (mendel1 < 0.5) {
-                    tsk_id_t tmp = p1g1;
-                    p1g1 = p1g2;
-                    p1g2 = tmp;
-                }
- 
-                if (mendel2 < 0.5) {
-                    tsk_id_t tmp = p2g1;
-                    p2g1 = p2g2;
-                    p2g2 = tmp;
-                }
-                
-                
+
+                /* randomly change the gamete order */
+                sleepy_random_gamete_switch(p1g1, p1g2);
+                sleepy_random_gamete_switch(p2g1, p2g2);
+
+                /* adding next generation to node table */
                 tsk_node_table_add_row(&tables.nodes, TSK_NODE_IS_SAMPLE, gen, TSK_NULL, TSK_NULL, NULL, 0);
                 tsk_node_table_add_row(&tables.nodes, TSK_NODE_IS_SAMPLE, gen, TSK_NULL, TSK_NULL, NULL, 0);
                     
@@ -875,6 +863,7 @@ void dormancy(tsk_table_collection_t &tables,
                             next_selection_genotypes[k][0][i_genotype] = genotype;
                         }
                     }
+                    
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
@@ -923,6 +912,8 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 recombination_events.clear();
                 sleepy_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p2g1,p2g2},next_offspring_index, L);
+
+
                 if (selection_activation_generation && gen > selection_activation_generation) {
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
                     for (auto k : lookup_selection_keys) {
