@@ -96,7 +96,6 @@ TEST(test_sleepy_reverse_time2, sleepy_reverse_time) {
 }
 
 
-
 TEST(test_sleepy_num_non_sample_node, sleepy_num_non_sample_node) {
   int gen = 0;
   tsk_table_collection_t tables;
@@ -106,4 +105,47 @@ TEST(test_sleepy_num_non_sample_node, sleepy_num_non_sample_node) {
   tables.nodes.flags[4] = 0;
   tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
   EXPECT_EQ(num_non_sample, 2);
+}
+
+TEST(test_sleepy_dormancy_weights, sleepy_dormancy_weights) {
+
+  int m = 5;
+  double b = 1.0;
+  std::vector<double> dorm_weights;
+  sleepy_dormancy_weights(dorm_weights, b, m);
+
+  ASSERT_EQ(dorm_weights.size(), m) << "dorm_weights: " << dorm_weights.size() << "m " << m;
+
+
+  dorm_weights.clear();
+  b = 1.2;
+  ASSERT_DEATH(sleepy_dormancy_weights(dorm_weights, b, m), "");
+
+}
+
+TEST(test_sleepy_dormancy_generation, sleepy_dormancy_generation) {
+
+  int m = 5;
+  double b = 1.0;
+  int N = 2;
+  std::vector<double> dorm_weights;
+  sleepy_dormancy_weights(dorm_weights, b, m);
+  std::vector<tsk_id_t> dormancy_generations; 
+  sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
+  ASSERT_EQ(dormancy_generations.size(), 2*N);
+  
+
+}
+
+TEST(test_sleepy_recombination_events, sleepy_recombination_events) {
+  std::vector<recombination_event> recombination_events;
+  double r = 1;
+  std::pair<tsk_id_t, tsk_id_t> parent_idxs = {3, 4};
+  tsk_id_t next_offspring_id = 12;
+  double L = 10;
+
+  sleepy_recombination_events(recombination_events, r, parent_idxs, next_offspring_id, L);
+  EXPECT_EQ(recombination_events[0].left, 0);
+  EXPECT_EQ(recombination_events[recombination_events.size()-1].right, L);
+
 }
