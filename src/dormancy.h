@@ -619,8 +619,10 @@ void dormancy(tsk_table_collection_t &tables,
               bool add_mutations_after_fixation = true
              ) {
     
-    
-    int ret, reached_fixation, generations_post_fixation = 0;
+    int ret = 0;
+    int reached_fixation = 0;
+    int generations_post_fixation = 0;
+
     bool keep_adding_mutation = true;
     
     std::map<double, double> position_coefficient_mapping;
@@ -630,7 +632,6 @@ void dormancy(tsk_table_collection_t &tables,
         position_dominance_mapping[selection_positions[i]] = dominance_coefficients[i];
     }
 
-    
     //mu = 4 * N * mu * L;
     //r = 4 * N * r * L;
     mu = mu * L;
@@ -641,17 +642,21 @@ void dormancy(tsk_table_collection_t &tables,
     }
     
     /* selection genotypes stores the genotypes of mutations under selection for m generations */
-    std::map<double, genotype_matrix> selection_genotypes, next_selection_genotypes;
+    std::map<double, genotype_matrix> selection_genotypes;
+    std::map<double, genotype_matrix> next_selection_genotypes;
 
-    std::map<double, bool> lookup, lookup_selection;
-    std::map<double, int> fixed_mutations, prev_generation;
+    std::map<double, bool> lookup;
+    std::map<double, bool> lookup_selection;
+    std::map<double, int> fixed_mutations;
+    std::map<double, int> prev_generation;
 
     std::vector<std::pair<tsk_id_t, MutationMetaData>> temp_mutations;
     std::map<double, bool> mutation_adding_generation;
     
     /* vectors storing position of mutations */
-    std::vector<double> mpos_selection, mpos;
-    
+    std::vector<double> mpos_selection;
+    std::vector<double> mpos;
+
     std::vector<tsk_id_t> parents;
     
     int gen = 0;
@@ -668,12 +673,10 @@ void dormancy(tsk_table_collection_t &tables,
     
     for(int num_generation=0; num_generation<num_generations;) {
 
-
         tsk_id_t next_offspring_index = tables.nodes.num_rows;
         tsk_id_t num_non_sample = sleepy_num_non_sample_node(tables.nodes);
         tsk_id_t first_parental_index = next_offspring_index - (2*N) - num_non_sample; /* num_non_sample will be 0 during first iteration */
         
-
         for (int c=0; c<gc; c++) {
 
             if (reached_fixation == 1) {
@@ -690,27 +693,20 @@ void dormancy(tsk_table_collection_t &tables,
                 return;
             }
 
-
             std::vector<double> dorm_weights; sleepy_dormancy_weights(dorm_weights, b, m);
             std::vector<tsk_id_t> dormancy_generations; sleepy_dormancy_generation(dormancy_generations, dorm_weights, 2*N);
             std::vector<double> keys = get_keys(selection_genotypes);
-
 
             /* selection and at least one active selective mutation */
             if (selection_activation_generation && gen > selection_activation_generation && keys.size() != 0) {
                 selection_generation++;
                 
-                /* probably should be a function */
                 std::map<int, genotype_matrix> selection_genotypes_output;
                 sleepy_merge_selection_genotypes(selection_genotypes_output, selection_genotypes);
-
 
                 /* usually should be just one */
                 std::vector<int> current_active_generations_int = get_keys(selection_genotypes_output);
                 assert(("current active generations is not equal to one", current_active_generations_int.size() == 1));
-
-
-                
                 
                 /* update recorder */
                 std::vector<double> keys = get_keys(selection_genotypes);
@@ -722,7 +718,6 @@ void dormancy(tsk_table_collection_t &tables,
                         recorder.insert(k, selection_generation, genotype_sum, position_coefficient_mapping[k], position_dominance_mapping[k], keys.size(), gen);
                     }
                 }
-                
 
                 /* check if any mutation has reached fixation */
                 for (auto k : current_active_generations_int) {
@@ -740,13 +735,15 @@ void dormancy(tsk_table_collection_t &tables,
                         if (prev_generation.count(k) && num_generation - prev_generation[k] == 1) { fixed_mutations[k]++; } 
                         else { fixed_mutations[k] == 1; }
 
-                        if (fixed_mutations[k] >= 50) { reached_fixation = 1; }
+                        if (fixed_mutations[k] >= 50) { 
+                            //std::cout << "fix" << std::endl;
+                            reached_fixation = 1; 
+                        }
                         prev_generation[k] = num_generation;
                     }
                 }
 
-
-                /* necessay for recovery */
+                /* nessessary for recovery */
                 if (reached_fixation == 1) {
                     generations_post_fixation++;
                     if (add_mutations_after_fixation) { keep_adding_mutation = true; } 
@@ -791,7 +788,6 @@ void dormancy(tsk_table_collection_t &tables,
                     stats_random_discrete(parent, multiplied_weights, 1);
                     parents.emplace_back(parent[0]);
                 }
-                    
 
             } else {
 
@@ -828,7 +824,6 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 if (selection_activation_generation && gen > selection_activation_generation) {     
                     
-                    
                     /* get_keys simply retries all mutations currently under selection and saves them in lookup_selection_keys */
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
 
@@ -857,7 +852,7 @@ void dormancy(tsk_table_collection_t &tables,
                     for (int i=0; i<mu_selection_rates.size(); i++) {
                         mpos_selection.clear();
 
-                        //sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
+                        sleepy_fsites(mpos_selection, mu_selection_rates[i], selection_positions[i], lookup_selection);
                         
                         /* retrieve mutations currently under selection */
                         std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
@@ -870,7 +865,6 @@ void dormancy(tsk_table_collection_t &tables,
                             }
                         }
                         
-
                         for (auto mi : mpos_selection) {
                             recorder.insert(mi, selection_generation, 1, selection_coefficients[i], dominance_coefficients[i], lookup_selection.size(), gen);
                             mutation_adding_generation[mi] = true;
@@ -895,29 +889,21 @@ void dormancy(tsk_table_collection_t &tables,
                 
                 /* mutations in seeds currently never used */
                 mpos.clear();
-                if (mutations_in_seeds) {
-                     sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent1]+1);
-                } else {
-                     sleepy_infsites(mpos, mu, lookup, L, 1);
-                }
+                if (mutations_in_seeds) { sleepy_infsites(mpos, mu, lookup, L, dormancy_generations[parent1]+1);} 
+                else { sleepy_infsites(mpos, mu, lookup, L, 1); }
+
                 for (int mi=0; mi<mpos.size(); mi++) {
                     temp_mutations.emplace_back(std::pair<tsk_id_t, MutationMetaData>{next_offspring_index, {gen,mpos[mi]}});
                 }
                 i_genotype++;
                 next_offspring_index++;
 
-
-
-
                 /* same as above but currenly no mutation is added */
                 
                 recombination_events.clear();
                 sleepy_recombination_events(recombination_events, r, std::pair<tsk_id_t, tsk_id_t>{p2g1,p2g2},next_offspring_index, L);
 
-
                 /* no selective mutation is added on the second parent */
-                /*
-
                 if (selection_activation_generation && gen > selection_activation_generation) {
                     std::vector<double> lookup_selection_keys = get_keys(lookup_selection);
                     for (auto k : lookup_selection_keys) {
@@ -940,10 +926,7 @@ void dormancy(tsk_table_collection_t &tables,
                         }
                     }
                 }
-
-                */
   
-                
                 for (int re=0; re<recombination_events.size(); re++) {
                     ret = tsk_edge_table_add_row(&tables.edges, recombination_events[re].left, recombination_events[re].right, recombination_events[re].parent, recombination_events[re].child, NULL, 0);
                 }
@@ -956,11 +939,8 @@ void dormancy(tsk_table_collection_t &tables,
 
                 i_genotype++;
                 next_offspring_index++;
-                
             }
-                        
-    
-            
+                            
             first_parental_index = tables.nodes.num_rows - 2*N;
             /* get keys currenlty under selection */
 
@@ -978,13 +958,10 @@ void dormancy(tsk_table_collection_t &tables,
                 }
             }
             
-            
-            
             std::vector<double> lost_mutations;
-            //std::vector<double> fixed_mutations;
             
+            /*
             for (auto k : lookup_selection_keys) {
-
                 if (std::accumulate(std::begin(next_selection_genotypes[k][0]), std::end(next_selection_genotypes[k][0]),0) == 0) {
                     lost_mutations.emplace_back(k);
 
@@ -993,29 +970,41 @@ void dormancy(tsk_table_collection_t &tables,
                     next_selection_genotypes[k] = genotype_matrix(1, std::vector(2*N, 0));
                 }
             }
+            */
 
-            
-            for (int i=0; i<lost_mutations.size(); i++) {
-
-                lookup_selection.erase(lost_mutations[i]);
-                selection_genotypes.erase(lost_mutations[i]);
-                next_selection_genotypes.erase(lost_mutations[i]);
-                
-            }
-
-            
             for (auto k : lookup_selection_keys) {
 
-                if (fixed_mutations[(int) k] > 50) {
+                /* updating last row of genotypes */
+                selection_genotypes[k][m-1] = next_selection_genotypes[k][0];
 
+                /* zeroing out next_selection genotypes */
+                next_selection_genotypes[k] = genotype_matrix(1, std::vector(2*N, 0));
+
+                /* iterating over all dormancy generation */
+                int haplotype_sum = 0;
+                if (b < 1) { for (int j=0; j<m; j++) { haplotype_sum += std::accumulate(std::begin(selection_genotypes[k][j]), std::end(selection_genotypes[k][j]),0); }
+                } else {
+                    /* only check last generation */
+                    haplotype_sum = std::accumulate(std::begin(selection_genotypes[k][m-1]), std::end(selection_genotypes[k][m-1]),0); 
+                }
+                    
+                if (haplotype_sum == 0) { lost_mutations.emplace_back(k); }
+            }
+            
+            for (int i=0; i<lost_mutations.size(); i++) {
+                lookup_selection.erase(lost_mutations[i]);
+                selection_genotypes.erase(lost_mutations[i]);
+                next_selection_genotypes.erase(lost_mutations[i]);                
+            }
+
+            for (auto k : lookup_selection_keys) {
+                if (fixed_mutations[(int) k] > 50) {
                     lookup_selection.erase(k);
                     selection_genotypes.erase(k);
                     next_selection_genotypes.erase(k);
                     fixed_mutations.erase((int) k);
-
                 }
             }
-            
             
             std::vector<double> mutation_adding_generation_keys = get_keys(mutation_adding_generation);
             for (int i=0; i<mutation_adding_generation_keys.size(); i++) {
@@ -1029,9 +1018,6 @@ void dormancy(tsk_table_collection_t &tables,
         sleepy_add_time(tables.nodes, gc, 0, tables.nodes.num_rows-2*N*gc);
         sleepy_reverse_time(tables.nodes, tables.nodes.num_rows-2*N*gc, tables.nodes.num_rows);  
                 
-        
-        
-        
         if (stop_after_mrca) {
             tsk_table_collection_t tables_copy;
             ret = tsk_table_collection_copy(&tables, &tables_copy, 0);
@@ -1044,18 +1030,11 @@ void dormancy(tsk_table_collection_t &tables,
         
         sleepy_simplify(tables,temp_mutations, m);
 
-
         temp_mutations.clear();
         //num_generations--;
-        //std::cout << "num_generations: " << num_generations << std::endl;
-            
-            
-        
+        //std::cout << "num_generations: " << num_generations << std::endl;            
     }
         
-
-    
-
     sleepy_simplify(tables, temp_mutations, 1) ;
     
 }
