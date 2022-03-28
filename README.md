@@ -19,4 +19,7 @@ make
 ```
 
 Include bin directory into your PATH by modiying the .bashrc file
-export PATH=$PATH:/home/*username*/projects/sleepy/bin
+export PATH=$PATH:/home/*username*/projects/sleepy/bin   
+
+Checkout the minimal example in: https://github.com/kevinkorfmann/sleepy-analysis
+
