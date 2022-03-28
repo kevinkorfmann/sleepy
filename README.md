@@ -1,5 +1,6 @@
 # sleepy
 
+Forward weak dormancy simulations with positive selection.   
 
 ## Installation
 
