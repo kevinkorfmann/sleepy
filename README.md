@@ -24,5 +24,5 @@ Include bin directory into your PATH by modiying the .bashrc file:
 export PATH=$PATH:/home/*username*/projects/sleepy/bin   
 ```
 
-Checkout the minimal example in: https://github.com/kevinkorfmann/sleepy-analysis
+Checkout the minimal_code_example.ipynb in: https://github.com/kevinkorfmann/sleepy-analysis
 
