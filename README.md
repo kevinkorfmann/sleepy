@@ -18,8 +18,10 @@ cmake ..
 make
 ```
 
-Include bin directory into your PATH by modiying the .bashrc file
+Include bin directory into your PATH by modiying the .bashrc file:
+```console
 export PATH=$PATH:/home/*username*/projects/sleepy/bin   
+```
 
 Checkout the minimal example in: https://github.com/kevinkorfmann/sleepy-analysis
 
