@@ -23,28 +23,28 @@ int main(int argc, char *argv[])
 {
     po::options_description description("\nUsage");
     description.add_options()
-        ("help", "produce help message")
-        ("num_generations", po::value<int>()->default_value(1000), "num_generations = num_generations * gc")
-        ("N", po::value<int>()->default_value(50), "population size -> 2N haplotypes")
-        ("m", po::value<int>()->default_value(1), "m")
-        ("b", po::value<double>()->default_value(1), "b")
-        ("gc", po::value<int>()->default_value(20), "gc")
-        ("generations_post_fixation_threshold", po::value<int>()->default_value(1), "generations_post_fixation_threshold")
-        ("add_mutations_after_fixation", po::value<bool>()->default_value(true), "add_mutations_after_fixation")
-        ("mu", po::value<double>()->default_value(0), "mu")
-        ("r", po::value<double>()->default_value(0.5e-6), "r")
-        ("L", po::value<double>()->default_value(5000), "L")
-        ("mu_selection_rates", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{5e-8}, ""), "mu_selection_rates")
-        ("selection_coefficients", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{2}, ""), "selection_coefficients")
-        ("dominance_coefficients", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{0.5}, ""), "dominance_coefficients")
-        ("selection_positions", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{2500}, ""), "selection_positions")
-        ("selection_activation_generation", po::value<int>()->default_value(500), "selection_activation_generation")
-        ("mutation_in_seeds", po::value<bool>()->default_value(false), "mutation_in_seeds")
-        ("stop_after_mrca", po::value<bool>()->default_value(false), "stop_after_mrca")
-        ("percent_fixed", po::value<double>()->default_value(0), "percent_fixed")
-        ("debug_print", po::value<bool>()->default_value(false), "debug_print")
-        ("output_name", po::value<std::string>()->default_value("run"), "output_name")
-        ("output_directory", po::value<std::string>()->default_value("./"), "output_directory")
+        ("help", "produce help message.")
+        ("num_generations", po::value<int>()->default_value(100000000), "maximum generation run-time (num_generations = num_generations * gc)")
+        ("N", po::value<int>()->default_value(500), "population size -> 2N haplotypes")
+        ("m", po::value<int>()->default_value(100), "upper-bound for seed resusication")
+        ("b", po::value<double>()->default_value(1), "germination rate")
+        ("gc", po::value<int>()->default_value(50), "garbage collection")
+        ("generations_post_fixation_threshold", po::value<int>()->default_value(1), "run for n number of generations after fixation event has occured")
+        ("add_mutations_after_fixation", po::value<bool>()->default_value(true), "further adding selective mutations after fixation event; has to be false when studying recovery of sweeps")
+        //("mu", po::value<double>()->default_value(0), "mutation rate")
+        ("r", po::value<double>()->default_value(5e-5), "recombination rate")
+        ("L", po::value<double>()->default_value(10000), "mapping length")
+        //("mu_selection_rates", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{5e-8}, ""), "mu_selection_rates")
+        ("selection_coefficient", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{1}, ""), "selection coefficient")
+        ("dominance_coefficient", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{0.5}, ""), "dominance coefficient")
+        ("selection_position", po::value<std::vector<double> >()->multitoken()->default_value(std::vector<double>{5000}, ""), "selection position")
+        ("selection_activation_generation", po::value<int>()->default_value(500), "generation at which point to start introductin selective mutations")
+        //("mutation_in_seeds", po::value<bool>()->default_value(false), "mutation in seeds possible or not")
+        ("stop_after_mrca", po::value<bool>()->default_value(false), "stop simulation after mrca is found")
+        //("percent_fixed", po::value<double>()->default_value(0), "percent_fixed")
+        ("debug_print", po::value<bool>()->default_value(false), "used for debugging during developement")
+        ("output_name", po::value<std::string>()->default_value("run"), "output file nume part")
+        ("output_directory", po::value<std::string>()->default_value("./"), "output directory")
 
     ;
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     po::notify(vm);
 
     if (vm.count("help") || argc<2) {
-        std::cout << "sleepy (selection) simulator - (s3)" << std::endl;
+        std::cout << "sleepy (selection) simulator" << std::endl;
         std::cout << description << "\n";
         return 1;
     }
@@ -74,17 +74,21 @@ int main(int argc, char *argv[])
 
     double b =  vm["b"].as<double>();
     tsk_id_t gc = vm["gc"].as<int>();
-    double mu = vm["mu"].as<double>();
+    double mu = 0; //vm["mu"].as<double>();
     double r = vm["r"].as<double>();
     double L = vm["L"].as<double>();
-    double percent_fixed = vm["percent_fixed"].as<double>();
 
-    std::vector<double> mu_selection_rates = vm["mu_selection_rates"].as<std::vector<double>>();
-    std::vector<double> selection_coefficients = vm["selection_coefficients"].as<std::vector<double>>();
-    std::vector<double> dominance_coefficients = vm["dominance_coefficients"].as<std::vector<double>>();
-    std::vector<double> selection_positions = vm["selection_positions"].as<std::vector<double>>();
+    /* percent fixed set to 1.0 only full sweeps are subject of this study */
+    double percent_fixed = 1.0; //vm["percent_fixed"].as<double>();
+
+    /* rates are not used anymore, therefore initialized as empty */
+    std::vector<double> mu_selection_rates{0};// vm["mu_selection_rates"].as<std::vector<double>>();
+
+    std::vector<double> selection_coefficients = vm["selection_coefficient"].as<std::vector<double>>();
+    std::vector<double> dominance_coefficients = vm["dominance_coefficient"].as<std::vector<double>>();
+    std::vector<double> selection_positions = vm["selection_position"].as<std::vector<double>>();
     tsk_id_t selection_activation_generation = vm["selection_activation_generation"].as<int>();
-    bool mutation_in_seeds = vm["mutation_in_seeds"].as<bool>();
+    bool mutation_in_seeds = true; // vm["mutation_in_seeds"].as<bool>();
     bool stop_after_mrca = vm["stop_after_mrca"].as<bool>();
     bool debug_print = vm["debug_print"].as<bool>();
     std::string output_name = vm["output_name"].as<std::string>();
